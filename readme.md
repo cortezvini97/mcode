@@ -13,3 +13,17 @@ mcode is a C utility that allows you to manipulate and convert binary files. It 
 4. Find Binary Sequence: Searches and decodes a binary sequence in a binary file.
 
 5. Replace Binary Sequence: Replaces one binary sequence with another in a binary file.
+
+# Windows
+
+```powershell
+./build.ps1
+build/mcode.exe
+```
+
+# Linux
+
+```powershell
+make
+build/mcode
+```
