@@ -11,7 +11,7 @@ if (-not (Test-Path $buildDir)) {
 # Arquivos de código-fonte
 $srcFiles = @(
     "$srcDir\main.c",
-    "$srcDir\functions.c"
+    "$srcDir\functions_win.c"
 )
 
 # Nome do arquivo executável de saída

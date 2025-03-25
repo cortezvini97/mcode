@@ -1,50 +1,51 @@
-#include "functions.h"
+#include <functions_linux.h>
 
-void validate_args(int argc){
+void validate_args(int argc) {
     if (argc < 2) {
-        printf("mcode v1.0.0\n");
-        printf("mcode --machinecode <file.exe>\n");
-        printf("mcode --machinecodemap <file.exe>\n");
-        printf("mcode --applyModdify <file.binary> <file_output>\n");
-        printf("mcode --findBinary <file.binary> <binario>\n");
-        printf("mcode --replace <file.binary> <binario_old> <binario_new>\n");
+        fprintf(stderr, "mcode v1.0.0\n");
+        fprintf(stderr, "mcode --machinecode <executable>\n");
+        fprintf(stderr, "mcode --machinecodemap <executable>\n");
+        fprintf(stderr, "mcode --applyModdify <file.binary> <file_output>\n");
+        fprintf(stderr, "mcode --findBinary <file.binary> <binario>\n");
+        fprintf(stderr, "mcode --replace <file.binary> <binario_old> <binario_new>\n");
     }
 }
-
 
 int file_exists(const char *filename) {
     struct stat buffer;
     return (stat(filename, &buffer) == 0);
 }
 
-
-int createBinaryFile(int argc, char const *argv[]){
+int createBinaryFile(int argc, char const *argv[]) {
     if(argc < 3){
-        printf("Uso: mcode --machinecode <file.exe>");
+        printf("Uso: mcode --machinecode <executables>\n");
         return 0;
     }
 
     const char *file_exe = argv[2];
     char output_file[256];
 
-    
+    // Verificar se o arquivo existe
     if (!file_exists(file_exe)) {
         printf("Erro: Arquivo não existe.\n");
         return 0;
     }
-    
+
+    // Obter o nome do arquivo sem a extensão
     char *dot = strrchr(file_exe, '.');
     char file_name[256];
-    
+
     if (dot) {
         size_t len = dot - file_exe;
         strncpy(file_name, file_exe, len);
         file_name[len] = '\0';
     } else {
-        strcpy(file_name, file_exe);
+        strncpy(file_name, file_exe, sizeof(file_name) - 1); // Caso o arquivo não tenha extensão
+        file_name[sizeof(file_name) - 1] = '\0';
     }
-    
-    snprintf(output_file, sizeof(output_file), "%s.binary", file_name);
+
+    // Garantir que o nome do arquivo + ".binary" não ultrapassem 256 caracteres
+    snprintf(output_file, sizeof(output_file), "%.*s.binary", (int)(sizeof(output_file) - strlen(file_name) - 1), file_name);
 
     // Abrir arquivo binário para leitura
     FILE *binary_file = fopen(file_exe, "rb");
@@ -77,10 +78,9 @@ int createBinaryFile(int argc, char const *argv[]){
     return 1;
 }
 
-
 int machineCodeMap(int argc, char const *argv[]) {
     if (argc < 3) {
-        printf("Uso: mcode --machinecodemap <file.exe>\n");
+        printf("Uso: mcode --machinecodemap <executable>\n");
         return 0;
     }
 
@@ -132,7 +132,6 @@ int machineCodeMap(int argc, char const *argv[]) {
     printf("Arquivo gerado: %s\n", output_file);
     return 1;
 }
-
 
 int generateBinaryExecutableFile(int argc, char const *argv[]) {
     if (argc < 4) {
@@ -198,9 +197,9 @@ int generateBinaryExecutableFile(int argc, char const *argv[]) {
     }
     free(cleaned_machine_code);
 
-    // Criar o arquivo de saída
+    // Criar o arquivo de saída sem a extensão .exe
     char output_filename[256];
-    snprintf(output_filename, sizeof(output_filename), "%s.exe", file_output);
+    snprintf(output_filename, sizeof(output_filename), "%s", file_output);
 
     FILE *output_file = fopen(output_filename, "wb");
     if (!output_file) {
@@ -269,8 +268,11 @@ int findBinary(int argc, char const *argv[]) {
     char formatted_binary[1024] = {0};
     for (size_t i = 0, j = 0; i < len; i += 8, j++) {
         strncat(formatted_binary, binary_search + i, 8);
+
+        // Verificando se há espaço suficiente para adicionar o espaço
         if (j < (len / 8) - 1) {
-            strncat(formatted_binary, " ", 1); // Adicionar espaço entre os bytes
+            // Usando snprintf para garantir que não haverá overflow
+            snprintf(formatted_binary + strlen(formatted_binary), sizeof(formatted_binary) - strlen(formatted_binary), " ");
         }
     }
 
@@ -307,7 +309,6 @@ int findBinary(int argc, char const *argv[]) {
     free(binary_content);
     return 1;
 }
-
 
 int replaceBinary(int argc, char const *argv[]) {
     if (argc < 5) {
@@ -360,7 +361,11 @@ int replaceBinary(int argc, char const *argv[]) {
     for (size_t i = 0, j = 0; i < len_old; i += 8, j++) {
         strncat(formatted_binary_old, binary_old + i, 8);
         if (j < (len_old / 8) - 1) {
-            strncat(formatted_binary_old, " ", 1); // Adicionar espaço entre os bytes
+            size_t len = strlen(formatted_binary_old);
+            if (len + 1 < sizeof(formatted_binary_old)) {
+                formatted_binary_old[len] = ' ';
+                formatted_binary_old[len + 1] = '\0';
+            }
         }
     }
 
@@ -377,7 +382,11 @@ int replaceBinary(int argc, char const *argv[]) {
     for (size_t i = 0, j = 0; i < len_new; i += 8, j++) {
         strncat(formatted_binary_new, binary_new + i, 8);
         if (j < (len_new / 8) - 1) {
-            strncat(formatted_binary_new, " ", 1); // Adicionar espaço entre os bytes
+            size_t len = strlen(formatted_binary_new);
+            if (len + 1 < sizeof(formatted_binary_new)) {
+                formatted_binary_new[len] = ' ';
+                formatted_binary_new[len + 1] = '\0';
+            }
         }
     }
 
@@ -389,11 +398,9 @@ int replaceBinary(int argc, char const *argv[]) {
 
         // Verifica se a nova sequência é maior ou menor que a antiga
         if (new_len > old_len) {
-            // Realocar o espaço para o novo conteúdo, se necessário
             binary_content = realloc(binary_content, file_size + (new_len - old_len));
             file_size += (new_len - old_len);
         } else if (new_len < old_len) {
-            // Realocar o espaço para o novo conteúdo, se necessário
             binary_content = realloc(binary_content, file_size - (old_len - new_len));
             file_size -= (old_len - new_len);
         }
@@ -401,7 +408,7 @@ int replaceBinary(int argc, char const *argv[]) {
         // Substituir a sequência
         memmove(pos + new_len, pos + old_len, file_size - (pos - binary_content) - old_len);
         memcpy(pos, formatted_binary_new, new_len);
-        pos += new_len; // Avançar para o próximo lugar
+        pos += new_len;
     }
 
     // Abrir o arquivo binário para escrita
