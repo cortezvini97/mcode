@@ -15,6 +15,10 @@ int main(int argc, char const *argv[]){
         return 1;  // Retorna um código de erro
     }
 
+    if (strcmp(argv[1], "--version") == 0) {
+        printf("mcode v1.0.0");
+    }
+
     if (strcmp(argv[1], "--machinecode") == 0) {
         int created = createBinaryFile(argc, argv);
         if(created == 1){
@@ -50,6 +54,15 @@ int main(int argc, char const *argv[]){
         }
     }
 
+    if (strcmp(argv[1], "--execute") == 0) {
+        int found = executeBinary(argc, argv);
+        if (found == 1) {
+            printf("\nExecução realizada com sucesso.");
+        }
+    }
+
+    
+
     SetConsoleOutputCP(CPAGE_DEFAULT);
     
 
@@ -65,6 +78,10 @@ int main(int argc, char const *argv[]){
 
     if (argc < 2) {
         return 1;  // Retorna um código de erro
+    }
+
+    if (strcmp(argv[1], "--version") == 0) {
+        printf("mcode v1.0.0\n");
     }
 
     if (strcmp(argv[1], "--machinecode") == 0) {
@@ -99,6 +116,13 @@ int main(int argc, char const *argv[]){
         int found = replaceBinary(argc, argv);
         if (found == 1) {
             printf("Binário atualizado.");
+        }
+    }
+
+    if (strcmp(argv[1], "--execute") == 0) {
+        int found = executeBinary(argc, argv);
+        if (found == 1) {
+            printf("\nExecução realizada com sucesso.");
         }
     }
 

@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <Windows.h>
@@ -19,5 +20,6 @@ int machineCodeMap(int argc, char const *argv[]);
 int generateBinaryExecutableFile(int argc, char const *argv[]);
 int findBinary(int argc, char const *argv[]);
 int replaceBinary(int argc, char const *argv[]);
+int executeBinary(int argc, char const *argv[]);
 
 #endif // FUNCTIONS_WIN_H

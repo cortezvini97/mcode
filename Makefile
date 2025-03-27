@@ -33,3 +33,12 @@ clean:
 run: $(OUTPUT_FILE)
 	@echo "Executando o projeto..."
 	./$(OUTPUT_FILE)
+
+# Regra para instalar o binário no /usr/local/bin
+install: $(OUTPUT_FILE)
+	@echo "Instalando o projeto..."
+	sudo cp $(OUTPUT_FILE) /usr/local/bin/
+
+unistall: $(OUTPUT_FILE)
+	@echo "Desinstalando o projeto..."
+	sudo rm -rf /usr/local/bin/mcode

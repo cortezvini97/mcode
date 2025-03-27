@@ -4,10 +4,12 @@ void validate_args(int argc) {
     if (argc < 2) {
         fprintf(stderr, "mcode v1.0.0\n");
         fprintf(stderr, "mcode --machinecode <executable>\n");
+        printf("mcode --execute <file.binary>\n");
         fprintf(stderr, "mcode --machinecodemap <executable>\n");
         fprintf(stderr, "mcode --applyModdify <file.binary> <file_output>\n");
         fprintf(stderr, "mcode --findBinary <file.binary> <binario>\n");
         fprintf(stderr, "mcode --replace <file.binary> <binario_old> <binario_new>\n");
+        fprintf(stderr, "mcode --version\n");
     }
 }
 
@@ -426,5 +428,118 @@ int replaceBinary(int argc, char const *argv[]) {
     free(binary_content);
 
     printf("Substituição realizada com sucesso!\n");
+    return 1;
+}
+
+int executeBinary(int argc, char const *argv[]) {
+    if (argc < 3) {
+        printf("Uso: mcode --execute <file.binary>\n");
+        return 0;
+    }
+
+    const char *file_binary = argv[2];
+
+    if (!file_exists(file_binary)) {
+        printf("Erro: Arquivo não existe.\n");
+        return 0;
+    }
+
+    // Abrir o arquivo binário
+    FILE *binary_file = fopen(file_binary, "r");
+    if (!binary_file) {
+        printf("Erro ao abrir o arquivo %s\n", file_binary);
+        return 0;
+    }
+
+    // Ler o conteúdo do arquivo
+    fseek(binary_file, 0, SEEK_END);
+    long file_size = ftell(binary_file);
+    fseek(binary_file, 0, SEEK_SET);
+
+    char *machine_code = (char *)malloc(file_size + 1);
+    if (machine_code == NULL) {
+        printf("Erro ao alocar memória\n");
+        fclose(binary_file);
+        return 0;
+    }
+
+    fread(machine_code, 1, file_size, binary_file);
+    machine_code[file_size] = '\0'; // Garantir que a string termine corretamente
+    fclose(binary_file);
+
+    // Remover espaços
+    char *cleaned_machine_code = (char *)malloc(file_size + 1);
+    int j = 0;
+    for (int i = 0; i < file_size; i++) {
+        if (machine_code[i] != ' ') {
+            cleaned_machine_code[j++] = machine_code[i];
+        }
+    }
+    cleaned_machine_code[j] = '\0';
+    free(machine_code);
+
+    // Converter a string binária para bytes
+    int num_bytes = strlen(cleaned_machine_code) / 8;
+    unsigned char *byte_list = (unsigned char *)malloc(num_bytes);
+    if (byte_list == NULL) {
+        printf("Erro ao alocar memória para os bytes\n");
+        free(cleaned_machine_code);
+        return 0;
+    }
+
+    for (int i = 0; i < num_bytes; i++) {
+        char byte_str[9] = {0};  // Para armazenar 8 bits + \0
+        strncpy(byte_str, cleaned_machine_code + i * 8, 8);
+        byte_list[i] = (unsigned char)strtol(byte_str, NULL, 2);
+    }
+    free(cleaned_machine_code);
+
+    // Obter o diretório temporário no Linux
+    const char *temp_path = "/tmp/";
+
+    srand(time(NULL)); 
+    int random_number = rand();
+    // Gerar o nome do arquivo temporário
+    char output_filename[1024];
+    snprintf(output_filename, sizeof(output_filename), "%s%s_%d", temp_path, "temp_binary", random_number);
+
+    // Criar o arquivo de saída
+    FILE *output_file = fopen(output_filename, "wb");
+    if (!output_file) {
+        printf("Erro ao abrir o arquivo de saída %s\n", output_filename);
+        free(byte_list);
+        return 0;
+    }
+
+    // Escrever os bytes no arquivo
+    fwrite(byte_list, 1, num_bytes, output_file);
+    fclose(output_file);
+
+    free(byte_list);
+
+    printf("Arquivo temporário %s criado com sucesso.\n", output_filename);
+
+    // Tornar o arquivo executável
+    if (chmod(output_filename, S_IRWXU) != 0) {
+        printf("Erro ao tornar o arquivo executável %s\n", output_filename);
+        remove(output_filename);
+        return 0;
+    }
+
+    // Executar o arquivo com os argumentos fornecidos
+    char command[1024];
+    snprintf(command, sizeof(command), "%s", output_filename);
+
+    // Executar o arquivo gerado
+    if (system(command) != 0) {
+        printf("Erro ao executar o arquivo %s\n", output_filename);
+        remove(output_filename);
+        return 0;
+    }
+
+    if (remove(output_filename) != 0) {
+        printf("Erro ao deletar o arquivo temporário %s\n", output_filename);
+    }
+
     return 1;
 }

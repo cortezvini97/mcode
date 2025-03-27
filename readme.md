@@ -17,13 +17,15 @@ mcode is a C utility that allows you to manipulate and convert binary files. It 
 # Windows
 
 ```powershell
-./build.ps1
-build/mcode.exe
+./make.ps1 --build
+mkdir C:\\mcode
+cp build\mcode.exe C:\\mcode
 ```
 
 # Linux
 
 ```powershell
 make
-build/mcode
+make install
+mcode --version
 ```
